@@ -1,0 +1,7 @@
+# Paquetes con binarios nativos que necesitan correr su script de instalación.
+# pnpm los bloquea por defecto y hay que habilitarlos a mano.
+allowBuilds:
+  "@tailwindcss/oxide": true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true
