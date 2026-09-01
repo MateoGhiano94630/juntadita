@@ -14,6 +14,14 @@ import { urlJuntada } from "../src/lib/url";
 
 const NOMBRES = ["Juan", "Ana", "Nico", "Sofi", "Martín", "Caro", "Feli", "Lu"];
 
+// Algunos con alias y otros sin, para ver los dos estados en la liquidación.
+const ALIAS: Record<string, string> = {
+  Juan: "juan.perez.mp",
+  Ana: "ana.gomez",
+  Martín: "martin.ok.uala",
+  Nico: "0000003100010000000001",
+};
+
 const GASTOS: { descripcion: string; pesos: number; pagador: string; entre: string[] }[] = [
   // $10.000 entre 3 no divide exacto: 3.333,34 / 3.333,33 / 3.333,33.
   { descripcion: "Hielo y carbón", pesos: 10000, pagador: "Nico", entre: ["Nico", "Sofi", "Lu"] },
@@ -35,6 +43,7 @@ async function main() {
     juntadaId,
     nombre: n,
     orden: i,
+    alias: ALIAS[n] ?? null,
   }));
   const porNombre = new Map(gente.map((p) => [p.nombre, p]));
 

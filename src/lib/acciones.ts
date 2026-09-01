@@ -21,6 +21,8 @@ export type Resultado = { ok: true } | { ok: false; error: string };
 
 const MAX_PARTICIPANTES = 60;
 const LARGO_NOMBRE = 80;
+/** Un CVU son 22 dígitos y un alias llega a 20 caracteres. 50 sobra para los dos. */
+const LARGO_ALIAS = 50;
 
 const tocarJuntada = (juntadaId: string) =>
   db.update(juntadas).set({ actualizadaEn: new Date() }).where(eq(juntadas.id, juntadaId));
@@ -247,6 +249,36 @@ export async function agregarParticipante(entrada: {
       nombre,
       orden: (resumen?.ultimoOrden ?? -1) + 1,
     }),
+    tocarJuntada(entrada.juntadaId),
+  ]);
+
+  refrescar(entrada.slug);
+  return { ok: true };
+}
+
+/**
+ * Guarda el alias/CVU con el que a alguien le pueden transferir (RF-81).
+ *
+ * Mandar string vacío lo borra. No se valida contra ningún banco a propósito: es un dato
+ * declarado, la plata nunca pasa por acá (RN-11) y un alias mal escrito lo arregla la
+ * misma persona en dos toques.
+ */
+export async function guardarAlias(entrada: {
+  juntadaId: string;
+  slug: string;
+  participanteId: string;
+  alias: string;
+}): Promise<Resultado> {
+  const alias = entrada.alias.trim().slice(0, LARGO_ALIAS);
+
+  const valido = await validarParticipantes(entrada.juntadaId, [entrada.participanteId]);
+  if (!valido) return { ok: false, error: "Esa persona no es de esta juntada." };
+
+  await db.batch([
+    db
+      .update(participantes)
+      .set({ alias: alias || null })
+      .where(eq(participantes.id, entrada.participanteId)),
     tocarJuntada(entrada.juntadaId),
   ]);
 

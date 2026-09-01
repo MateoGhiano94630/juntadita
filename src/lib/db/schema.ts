@@ -37,6 +37,12 @@ export const participantes = pgTable(
       .notNull()
       .references(() => juntadas.id, { onDelete: "cascade" }),
     nombre: text("nombre").notNull(),
+    /**
+     * Alias o CVU para que le transfieran (RF-81). Declarado voluntariamente y nada más:
+     * no se valida contra ningún banco y no se guarda ningún otro dato bancario (RNF-33).
+     * La plata nunca pasa por acá (RN-11).
+     */
+    alias: text("alias"),
     /** Orden estable de incorporación. Define el reparto del residuo (RN-02) y nunca cambia. */
     orden: integer("orden").notNull(),
     creadoEn: timestamp("creado_en", { withTimezone: true }).notNull().defaultNow(),

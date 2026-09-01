@@ -10,6 +10,8 @@ import { BotonCompartir } from "./BotonCompartir";
 import { FormularioGasto } from "./FormularioGasto";
 import { ListaGastos } from "./ListaGastos";
 import { Liquidacion } from "./Liquidacion";
+import { MiAlias } from "./MiAlias";
+import { MiSaldo } from "./MiSaldo";
 import { PagosRegistrados } from "./PagosRegistrados";
 import { Saldos } from "./Saldos";
 import { SelectorIdentidad } from "./SelectorIdentidad";
@@ -27,6 +29,7 @@ export function PantallaJuntada({ juntada, url }: { juntada: JuntadaCompleta; ur
   }, [listo, identidadId]);
 
   const yo = juntada.participantes.find((p) => p.id === identidadId);
+  const miSaldo = juntada.saldos.find((s) => s.participanteId === identidadId);
 
   const mensaje = armarMensaje({
     nombre: juntada.nombre,
@@ -58,6 +61,13 @@ export function PantallaJuntada({ juntada, url }: { juntada: JuntadaCompleta; ur
         </button>
       </header>
 
+      {/* Lo primero después del total: tu propio número, que es a lo que entraste. */}
+      {listo && miSaldo ? (
+        <div className="mt-5">
+          <MiSaldo saldo={miSaldo} liquidacion={juntada.liquidacion} />
+        </div>
+      ) : null}
+
       <div className="mt-7 flex flex-col gap-7">
         <section>
           <Titulo>Qué se gastó</Titulo>
@@ -77,12 +87,19 @@ export function PantallaJuntada({ juntada, url }: { juntada: JuntadaCompleta; ur
 
         <section>
           <Titulo>Quién le paga a quién</Titulo>
-          <Liquidacion
-            juntadaId={juntada.id}
-            slug={juntada.slug}
-            transferencias={juntada.liquidacion}
-            hayGastos={juntada.gastos.length > 0}
-          />
+          <div className="flex flex-col gap-2">
+            <Liquidacion
+              juntadaId={juntada.id}
+              slug={juntada.slug}
+              transferencias={juntada.liquidacion}
+              participantes={juntada.participantes}
+              hayGastos={juntada.gastos.length > 0}
+            />
+            {/* Va acá y no en un menú aparte: es donde se entiende para qué sirve. */}
+            {listo && yo ? (
+              <MiAlias juntadaId={juntada.id} slug={juntada.slug} yo={yo} />
+            ) : null}
+          </div>
         </section>
 
         <PagosRegistrados

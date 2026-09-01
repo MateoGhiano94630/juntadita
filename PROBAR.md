@@ -34,6 +34,8 @@ pnpm dev          # http://localhost:3000
 
 `pnpm db:push` compara el esquema de [src/lib/db/schema.ts](src/lib/db/schema.ts) contra la base y aplica la diferencia. Si querés ver el SQL exacto que genera, está en [drizzle/](drizzle/) y se regenera con `pnpm db:generate`.
 
+> **Si ya tenías la base creada de antes**, volvé a correr `pnpm db:push`: la columna `participante.alias` es nueva. Es un `ALTER TABLE ... ADD COLUMN` nullable, así que no toca nada de lo que ya haya cargado.
+
 ### 1.3 Los tests
 
 ```bash
@@ -61,7 +63,7 @@ Crea *Asado del sábado* con 8 personas y 6 gastos, y te imprime la URL:
   http://localhost:3000/j/asado-del-sabado-k7m2xq4p
 ```
 
-Los gastos del seed están elegidos para cubrir los casos que importan: **$10.000 entre 3** (que no divide exacto) y dos gastos donde no participan todos.
+Los gastos del seed están elegidos para cubrir los casos que importan: **$10.000 entre 3** (que no divide exacto) y dos gastos donde no participan todos. Cuatro de las ocho personas vienen con alias cargado y cuatro sin, para que veas los dos estados en la liquidación.
 
 Cada corrida crea una juntada nueva, así que podés correrlo las veces que quieras.
 
@@ -256,9 +258,26 @@ Este es el caso que rompe las apps mal hechas.
 
 ### 5.7 Compartir
 
-- [ ] Tocá **Compartir al grupo**. Tiene que decir "¡Copiado!".
+- [ ] **En celular**, tocá **Compartir al grupo**: tiene que abrir el selector nativo del sistema con WhatsApp entre las opciones, sin pasar por copiar y pegar.
+- [ ] **En escritorio**, el botón dice *"Copiar para el grupo"* y copia. Es el fallback esperado: `navigator.share` casi no existe fuera de mobile.
 - [ ] Pegalo en un chat y leelo **sin abrir el link**: ¿se entiende quién le debe cuánto a quién? Ese es el requisito.
 - [ ] Probalo también con la juntada recién creada (sin gastos) y con la juntada toda saldada: el mensaje cambia en los dos casos.
+
+### 5.8 Lo tuyo (saldo personal)
+
+- [ ] Apenas elegís quién sos, arriba de todo tiene que aparecer tu propio número: **"Debés $X"** en rojo o **"Te deben $X"** en verde.
+- [ ] Si debés a una sola persona, tiene que decir **a quién**. Si debés a varias, "a N personas".
+- [ ] Cambiá de identidad con el botón del header: el número de arriba tiene que cambiar solo.
+- [ ] Marcá todos los pagos como saldados: tiene que pasar a **"Estás al día"**.
+
+### 5.9 Alias de cobro
+
+- [ ] Debajo de la liquidación, tocá **"+ Poné tu alias para que te transfieran"** y cargá uno.
+- [ ] Abrí la juntada **en el otro celular** con otra identidad: en la línea donde te tienen que pagar a vos, tiene que aparecer tu alias con un botón **Copiar**.
+- [ ] Tocá **Copiar** y pegalo en cualquier lado: tiene que salir el alias solo, sin texto de más, listo para la app del banco.
+- [ ] En las líneas de gente sin alias tiene que decir *"Fulano todavía no cargó su alias"*.
+- [ ] Probá con un CVU de 22 dígitos: tiene que entrar entero.
+- [ ] Entrá a **Cambiar**, borrá el campo y guardá: el alias se tiene que ir.
 
 ---
 

@@ -1,0 +1,1 @@
+ALTER TABLE "participante" ADD COLUMN "alias" text;

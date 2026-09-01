@@ -6,12 +6,20 @@ import { calcularSaldos, totalGastado } from "./dominio/saldos";
 import { liquidacionMinima } from "./dominio/liquidacion";
 import type { Gasto, Pago, Participante, Saldo, Transferencia } from "./dominio/tipos";
 
+/**
+ * El participante con lo que necesita la pantalla. Extiende el tipo del dominio en vez de
+ * ensuciarlo: al motor de cálculo el alias no le importa, y sigue aceptando esto tal cual.
+ */
+export interface ParticipanteUI extends Participante {
+  alias: string | null;
+}
+
 export interface JuntadaCompleta {
   id: string;
   slug: string;
   nombre: string;
   actualizadaEn: Date;
-  participantes: Participante[];
+  participantes: ParticipanteUI[];
   gastos: Gasto[];
   pagos: Pago[];
   saldos: Saldo[];
@@ -62,10 +70,11 @@ export async function getJuntadaPorSlug(slug: string): Promise<JuntadaCompleta |
     repartosPorGasto.set(fila.reparto.gastoId, lista);
   }
 
-  const listaParticipantes: Participante[] = filasParticipantes.map((p) => ({
+  const listaParticipantes: ParticipanteUI[] = filasParticipantes.map((p) => ({
     id: p.id,
     nombre: p.nombre,
     orden: p.orden,
+    alias: p.alias,
   }));
 
   const ordenPorId = new Map(listaParticipantes.map((p) => [p.id, p.orden]));

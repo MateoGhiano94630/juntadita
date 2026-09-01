@@ -1,35 +1,46 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { compartirNativo, copiarAlPortapapeles, hayCompartirNativo } from "@/lib/copiar";
 
 /**
- * Copia el mensaje armado para pegarlo en el grupo.
+ * Manda el mensaje armado al grupo.
  *
- * El fallback del textarea no es paranoia: `navigator.clipboard` no existe fuera de
- * contexto seguro, y probar el preview con un túnel http o una IP de la red local es
- * exactamente el escenario donde se cae.
+ * En celular usa el selector nativo del sistema (RF-92): abre WhatsApp directo en vez de
+ * copiar → salir de la app → entrar a WhatsApp → pegar. Son tres pasos menos justo sobre
+ * el camino crítico de la hipótesis que estamos midiendo.
+ *
+ * Si no hay share nativo (escritorio), copia. Si tampoco se puede copiar (pasa fuera de
+ * https, que es exactamente el caso de probar con un túnel), muestra el texto para
+ * seleccionarlo a mano.
  */
 export function BotonCompartir({ mensaje }: { mensaje: string }) {
   const [copiado, setCopiado] = useState(false);
   const [manual, setManual] = useState(false);
+  const [nativo, setNativo] = useState(false);
 
-  const copiar = async () => {
-    try {
-      await navigator.clipboard.writeText(mensaje);
+  // Se resuelve después de montar: en el servidor no hay `navigator` y el botón cambia
+  // de texto según lo que soporte el aparato.
+  useEffect(() => setNativo(hayCompartirNativo()), []);
+
+  const compartir = async () => {
+    if (await compartirNativo(mensaje)) return;
+
+    if (await copiarAlPortapapeles(mensaje)) {
       setCopiado(true);
       setTimeout(() => setCopiado(false), 2000);
-    } catch {
-      setManual(true);
+      return;
     }
+    setManual(true);
   };
 
   return (
     <div className="flex flex-col gap-3">
       <button
-        onClick={copiar}
+        onClick={compartir}
         className="w-full rounded-2xl bg-emerald-700 px-6 py-4 text-lg font-semibold text-white transition active:scale-[0.98]"
       >
-        {copiado ? "¡Copiado!" : "Compartir al grupo"}
+        {copiado ? "¡Copiado!" : nativo ? "Compartir al grupo" : "Copiar para el grupo"}
       </button>
 
       {manual ? (
