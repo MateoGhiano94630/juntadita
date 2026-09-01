@@ -1,5 +1,6 @@
 import "server-only";
-import { asc, eq } from "drizzle-orm";
+import { cache } from "react";
+import { asc, count, eq, sum } from "drizzle-orm";
 import { db } from "./db";
 import { gastos, juntadas, pagos, participantes, repartos } from "./db/schema";
 import { calcularSaldos, totalGastado } from "./dominio/saldos";
@@ -33,8 +34,12 @@ export interface JuntadaCompleta {
  * Se hace en el servidor y en cada request: los saldos NUNCA se guardan (RN-03 / A4).
  * Son cuatro queries por slug; para una juntada de asado eso es irrelevante y evita
  * armar un join que después hay que desarmar a mano.
+ *
+ * Va envuelta en `cache()` de React porque la página la pide dos veces por request —una en
+ * `generateMetadata` para el preview y otra en el componente— y sin esto son diez viajes a
+ * la base en vez de cinco. El cache dura lo que dura el request: no hay datos viejos.
  */
-export async function getJuntadaPorSlug(slug: string): Promise<JuntadaCompleta | null> {
+export const getJuntadaPorSlug = cache(async (slug: string): Promise<JuntadaCompleta | null> => {
   const [juntada] = await db.select().from(juntadas).where(eq(juntadas.slug, slug)).limit(1);
   if (!juntada) return null;
 
@@ -110,16 +115,46 @@ export async function getJuntadaPorSlug(slug: string): Promise<JuntadaCompleta |
     liquidacion: liquidacionMinima(saldos),
     totalCentavos: totalGastado(listaGastos),
   };
-}
+});
 
-/** Solo lo que necesita el preview de WhatsApp. Tiene que ser barato (RNF-04: <1s). */
-export async function getResumenParaPreview(slug: string) {
-  const juntada = await getJuntadaPorSlug(slug);
+/**
+ * Solo lo que necesita la imagen del preview. Tiene que ser barato (RNF-04: <1s).
+ *
+ * No pasa por `getJuntadaPorSlug` a propósito: para mostrar un total y una cantidad de
+ * personas, traer todos los gastos, todos los repartos y calcular saldos y liquidación es
+ * trabajo tirado. Son tres consultas que la base resuelve con los índices que ya existen.
+ *
+ * La página NO usa esto: su `generateMetadata` deriva de la juntada completa, que el render
+ * ya va a pedir igual, así que le sale gratis.
+ */
+export const getResumenParaPreview = cache(async (slug: string) => {
+  const [juntada] = await db
+    .select({
+      id: juntadas.id,
+      nombre: juntadas.nombre,
+      actualizadaEn: juntadas.actualizadaEn,
+    })
+    .from(juntadas)
+    .where(eq(juntadas.slug, slug))
+    .limit(1);
   if (!juntada) return null;
+
+  const [[personas], [total]] = await Promise.all([
+    db
+      .select({ cantidad: count() })
+      .from(participantes)
+      .where(eq(participantes.juntadaId, juntada.id)),
+    db
+      .select({ suma: sum(gastos.montoCentavos) })
+      .from(gastos)
+      .where(eq(gastos.juntadaId, juntada.id)),
+  ]);
+
   return {
     nombre: juntada.nombre,
-    totalCentavos: juntada.totalCentavos,
-    cantidadPersonas: juntada.participantes.length,
+    // `sum` de un bigint vuelve como string, y como null si no hay ningún gasto.
+    totalCentavos: Number(total?.suma ?? 0),
+    cantidadPersonas: personas?.cantidad ?? 0,
     actualizadaEn: juntada.actualizadaEn,
   };
-}
+});
