@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PantallaJuntada } from "@/componentes/PantallaJuntada";
-import { getJuntadaPorSlug, getResumenParaPreview } from "@/lib/consultas";
+import { getJuntadaPorSlug } from "@/lib/consultas";
 import { formatearPesos } from "@/lib/dinero";
 import { baseUrl, urlJuntada } from "@/lib/url";
 
@@ -15,39 +15,43 @@ type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const resumen = await getResumenParaPreview(slug);
 
-  if (!resumen) {
+  // Se pide la juntada completa y no el resumen liviano: el render de abajo la va a pedir
+  // igual, y `getJuntadaPorSlug` está cacheada por request, así que esto no cuesta ninguna
+  // consulta extra. El resumen liviano es para la imagen, que se sirve en otra request.
+  const juntada = await getJuntadaPorSlug(slug);
+
+  if (!juntada) {
     return { title: "Esta juntada no existe" };
   }
 
-  const personas = `${resumen.cantidadPersonas} ${
-    resumen.cantidadPersonas === 1 ? "persona" : "personas"
-  }`;
+  const cantidad = juntada.participantes.length;
+  const personas = `${cantidad} ${cantidad === 1 ? "persona" : "personas"}`;
   const descripcion =
-    resumen.totalCentavos === 0
+    juntada.totalCentavos === 0
       ? `${personas} · todavía sin gastos. Entrá y cargá el tuyo.`
-      : `${personas} · ${formatearPesos(resumen.totalCentavos)} gastados. Entrá y cargá el tuyo.`;
+      : `${personas} · ${formatearPesos(juntada.totalCentavos)} gastados. Entrá y cargá el tuyo.`;
 
   // El ?v= es el cache-buster: WhatsApp cachea la imagen por URL, así que cada cambio de
-  // estado tiene que producir una URL distinta o el preview se queda congelado.
-  const imagen = `${baseUrl()}/api/og/${slug}?v=${resumen.actualizadaEn.getTime()}`;
+  // estado tiene que producir una URL distinta o el preview se queda congelado. La ruta de
+  // la imagen redirige a este mismo valor si le piden cualquier otro.
+  const imagen = `${baseUrl()}/api/og/${slug}?v=${juntada.actualizadaEn.getTime()}`;
 
   return {
-    title: resumen.nombre,
+    title: juntada.nombre,
     description: descripcion,
     openGraph: {
       type: "website",
       siteName: "Arreglamo",
       locale: "es_AR",
       url: urlJuntada(slug),
-      title: resumen.nombre,
+      title: juntada.nombre,
       description: descripcion,
-      images: [{ url: imagen, width: 1200, height: 630, alt: resumen.nombre }],
+      images: [{ url: imagen, width: 1200, height: 630, alt: juntada.nombre }],
     },
     twitter: {
       card: "summary_large_image",
-      title: resumen.nombre,
+      title: juntada.nombre,
       description: descripcion,
       images: [imagen],
     },

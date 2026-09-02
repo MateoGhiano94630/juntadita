@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { getResumenParaPreview } from "@/lib/consultas";
 import { formatearPesos } from "@/lib/dinero";
+import { baseUrl } from "@/lib/url";
 
 /**
  * La imagen del preview de WhatsApp.
@@ -14,7 +15,7 @@ import { formatearPesos } from "@/lib/dinero";
  * Eso es lo que mantiene el unfurl abajo del segundo que pide RNF-04.
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
@@ -22,6 +23,23 @@ export async function GET(
 
   if (!resumen) {
     return new Response("Esta juntada no existe", { status: 404 });
+  }
+
+  /**
+   * La imagen depende SOLO del estado de la juntada, y el `?v=` que la identifica sale de
+   * `actualizada_en`. Si llega cualquier otro valor se manda al canónico en vez de renderizar.
+   *
+   * Sin esto, pedir `?v=` con un número al azar fuerza un render nuevo en cada request: es un
+   * endpoint público y renderizar la imagen es lo más caro que hace la app (RNF-41). Con esto,
+   * lo único que cuesta una URL inventada es la consulta del resumen.
+   *
+   * El camino real no pasa por acá: el `og:image` que emite la página siempre trae el valor
+   * actual. Solo lo ve un link viejo, y para ese la redirección es justo lo que corresponde.
+   */
+  const actual = String(resumen.actualizadaEn.getTime());
+  if (new URL(request.url).searchParams.get("v") !== actual) {
+    // Se arma desde `baseUrl()` y no desde `request.url` para no reenviar a un host interno.
+    return Response.redirect(`${baseUrl()}/api/og/${encodeURIComponent(slug)}?v=${actual}`, 307);
   }
 
   const personas = `${resumen.cantidadPersonas} ${

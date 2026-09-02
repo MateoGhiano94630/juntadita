@@ -14,6 +14,12 @@ import type { Participante, ParticipanteId, Reparto } from "./tipos";
  * Que arranque por el pagador no es arbitrario: es el que puso la plata, así que si alguien
  * tiene que cargar con el centavo de más, que sea él. Y como el orden es estable, dos
  * recálculos del mismo gasto dan siempre el mismo resultado.
+ *
+ * Ojo con un caso que la regla no cubre: cuando el pagador NO participa del gasto (Ana paga
+ * un remís que usan Beto y Caro) no hay a quién darle el centavo por haber puesto la plata,
+ * y cae en el primero por orden de incorporación. Sigue siendo determinístico y sigue sumando
+ * exacto, pero es sistemático: en una juntada con muchos gastos así, el centavo lo come
+ * siempre la misma persona. Son centavos, no vale la pena resolverlo; vale la pena saberlo.
  */
 export function repartirIgual(
   montoCentavos: number,
@@ -41,7 +47,8 @@ export function repartirIgual(
   const base = Math.floor(montoCentavos / n);
   const residuo = montoCentavos - base * n; // 0 <= residuo < n
 
-  // La cola del residuo: primero el pagador (si participa del gasto), después el resto.
+  // La cola del residuo: primero el pagador si participa del gasto; si no, arranca por el
+  // primero por orden y el filtro de arriba queda vacío.
   const cola = [
     ...enOrden.filter((p) => p.id === pagadorId),
     ...enOrden.filter((p) => p.id !== pagadorId),

@@ -15,7 +15,7 @@ export default function robots(): MetadataRoute.Robots {
       { userAgent: "facebookexternalhit", allow: "/" },
       { userAgent: "WhatsApp", allow: "/" },
       { userAgent: "Twitterbot", allow: "/" },
-      { userAgent: "*", disallow: "/j/" },
+      { userAgent: "*", disallow: ["/j/", "/api/"] },
     ],
     host: baseUrl(),
   };
