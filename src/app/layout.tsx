@@ -5,7 +5,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   // Necesario para que las URLs de Open Graph salgan absolutas (A2).
   metadataBase: new URL(baseUrl()),
-  title: "Juntada",
+  title: "Arreglamo",
   description: "Dividí los gastos de la juntada sin instalar nada.",
 };
 

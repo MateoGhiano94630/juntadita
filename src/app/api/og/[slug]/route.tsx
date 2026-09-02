@@ -51,7 +51,7 @@ export async function GET(
         }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div style={{ fontSize: 30, color: "#a8a29e", letterSpacing: 2 }}>JUNTADA</div>
+          <div style={{ fontSize: 30, color: "#a8a29e", letterSpacing: 2 }}>ARREGLAMO</div>
           <div style={{ fontSize: tamañoNombre, fontWeight: 700, lineHeight: 1.15 }}>
             {nombre}
           </div>
