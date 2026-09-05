@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Metricas } from "@/componentes/Metricas";
 import { baseUrl } from "@/lib/url";
 import "./globals.css";
 
@@ -21,7 +22,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es-AR">
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        {children}
+        <Metricas />
+      </body>
     </html>
   );
 }
